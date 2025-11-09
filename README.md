@@ -46,10 +46,10 @@ The following components have been implemented and verified:
 - **Database Layer:** PostgreSQL connection, schema with orders table (including triggers for updated_at), and repository functions for creating and updating orders.
 - **Order Model:** TypeScript interfaces for Order and OrderStatus.
 - **API Endpoint:** POST /api/orders/execute accepts market orders with validation, creates DB record, enqueues job, and returns orderId.
-- **Queue Integration:** BullMQ queue for order execution jobs with exponential backoff retries.
-- **Worker Process:** Consumes jobs from queue, processes orders through full lifecycle (pending → routing → building → submitted → confirmed/failed), fetches quotes from mock DEX router (Raydium vs Meteora), selects best route based on effective output after fees, and simulates execution with random delays and fake tx_hashes.
+- **Queue Integration:** BullMQ queue for order execution jobs with exponential backoff retries (up to 3 attempts).
+- **Worker Process:** Consumes jobs from queue, processes orders through full lifecycle (pending → routing → building → submitted → confirmed/failed), fetches quotes from mock DEX router (Raydium vs Meteora), selects best route based on effective output after fees, and simulates execution with random delays and fake tx_hashes. Handles failures with retries and final failed status.
 - **Mock DEX Router:** Simulates quote fetching from Raydium and Meteora with realistic delays (200-400ms), random price variance (±5%), and different fees (30bps for Raydium, 25bps for Meteora), compares effective output to choose the best DEX.
-- **Real-time WebSocket Updates:** WebSocket endpoint at /ws/orders/:orderId streams order status updates in real-time as the worker progresses through the lifecycle. Uses Redis pub/sub for event broadcasting. Clients receive JSON messages like `{"type": "status", "orderId": "...", "status": "routing", "chosenDex": "raydium"}`.
+- **Real-time WebSocket Updates:** WebSocket endpoint at /ws/orders/:orderId streams order status updates in real-time as the worker progresses through the lifecycle. Uses Redis pub/sub for event broadcasting. Clients receive JSON messages like `{"type": "status", "orderId": "...", "status": "routing", "chosenDex": "raydium"}` or `{"type": "status", "orderId": "...", "status": "failed", "error": "..."}`.
 
 **Next Steps (Not Yet Implemented):**
 - Implement unit/integration tests.

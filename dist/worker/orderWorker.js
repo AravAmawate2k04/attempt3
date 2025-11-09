@@ -45,6 +45,10 @@ async function processOrder(job) {
     await (0, orderEvents_1.publishOrderStatus)({ orderId, status: 'submitted' });
     console.log(`Worker: submitted transaction for order ${orderId}`);
     // 4) execution (confirmed or failed)
+    // TEMPORARY: force a failure to test retries & failed status
+    if (process.env.FORCE_FAIL === '1') {
+        throw new Error('Simulated execution failure');
+    }
     try {
         const exec = await router.executeSwap(bestDex, order.tokenIn, order.tokenOut, order.amountIn, bestQuote.price);
         await (0, orderRepository_1.setOrderExecutionSuccess)(orderId, exec.executedPrice, exec.txHash);
@@ -70,16 +74,17 @@ async function processOrder(job) {
 }
 function startWorker() {
     const worker = new bullmq_1.Worker(orderQueue_1.ORDER_QUEUE_NAME, async (job) => {
+        console.log(`Worker: job ${job.id} attempt #${job.attemptsMade + 1} for order ${job.data.orderId}`);
         try {
             await processOrder(job);
         }
         catch (err) {
             console.error('Worker error processing job', job.id, err);
-            throw err; // let BullMQ handle retries
+            throw err; // BullMQ will retry up to "attempts"
         }
     }, {
         connection: orderQueue_1.redisConnection,
-        concurrency: 10, // supports up to 10 concurrent orders
+        concurrency: 10,
     });
     worker.on('completed', (job) => {
         console.log(`Worker: job ${job.id} completed`);

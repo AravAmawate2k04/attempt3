@@ -105,16 +105,19 @@ function startWorker() {
   const worker = new Worker(
     ORDER_QUEUE_NAME,
     async (job) => {
+      console.log(
+        `Worker: job ${job.id} attempt #${job.attemptsMade + 1} for order ${(job.data as any).orderId}`
+      );
       try {
         await processOrder(job);
       } catch (err) {
         console.error('Worker error processing job', job.id, err);
-        throw err; // let BullMQ handle retries
+        throw err; // BullMQ will retry up to "attempts"
       }
     },
     {
       connection: redisConnection,
-      concurrency: 10, // supports up to 10 concurrent orders
+      concurrency: 10,
     }
   );
 
