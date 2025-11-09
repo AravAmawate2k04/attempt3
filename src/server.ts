@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import { fastifyWebsocket } from '@fastify/websocket';
 import { orderRoutes } from './routes/orders';
+import { registerOrderStatusWs } from './ws/orderStatusGateway';
 
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -22,6 +23,9 @@ async function buildServer() {
 
   // Order routes (prefix: /api/orders)
   await app.register(orderRoutes, { prefix: '/api/orders' });
+
+  // Register WebSocket gateway
+  await registerOrderStatusWs(app);
 
   return app;
 }

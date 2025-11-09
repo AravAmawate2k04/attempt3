@@ -73,6 +73,97 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   return order;
 }
 
+export async function getOrderById(orderId: string): Promise<Order | null> {
+  const sql = `
+    SELECT
+      id,
+      order_type,
+      token_in,
+      token_out,
+      amount_in,
+      status,
+      chosen_dex,
+      executed_price,
+      tx_hash,
+      failed_reason,
+      created_at,
+      updated_at
+    FROM orders
+    WHERE id = $1
+  `;
+
+  const { rows } = await query(sql, [orderId]);
+  if (rows.length === 0) return null;
+
+  const row = rows[0];
+
+  const order: Order = {
+    id: row.id,
+    orderType: row.order_type,
+    tokenIn: row.token_in,
+    tokenOut: row.token_out,
+    amountIn: Number(row.amount_in),
+    status: row.status,
+    chosenDex: row.chosen_dex,
+    executedPrice: row.executed_price !== null ? Number(row.executed_price) : null,
+    txHash: row.tx_hash,
+    failedReason: row.failed_reason,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+
+  return order;
+}
+
+export async function updateOrderStatus(orderId: string, status: OrderStatus) {
+  const sql = `
+    UPDATE orders
+    SET status = $2
+    WHERE id = $1
+  `;
+  await query(sql, [orderId, status]);
+}
+
+export async function setOrderRoutingDecision(
+  orderId: string,
+  chosenDex: 'raydium' | 'meteora'
+) {
+  const sql = `
+    UPDATE orders
+    SET status = 'routing', chosen_dex = $2
+    WHERE id = $1
+  `;
+  await query(sql, [orderId, chosenDex]);
+}
+
+export async function setOrderExecutionSuccess(
+  orderId: string,
+  executedPrice: number,
+  txHash: string
+) {
+  const sql = `
+    UPDATE orders
+    SET status = 'confirmed',
+        executed_price = $2,
+        tx_hash = $3
+    WHERE id = $1
+  `;
+  await query(sql, [orderId, executedPrice, txHash]);
+}
+
+export async function setOrderExecutionFailed(
+  orderId: string,
+  reason: string
+) {
+  const sql = `
+    UPDATE orders
+    SET status = 'failed',
+        failed_reason = $2
+    WHERE id = $1
+  `;
+  await query(sql, [orderId, reason]);
+}
+
 export class OrderRepository {
   async createOrder(order: Omit<Order, 'createdAt' | 'updatedAt'>): Promise<Order> {
     const { rows } = await query(

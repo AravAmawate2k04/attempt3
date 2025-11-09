@@ -49,9 +49,9 @@ The following components have been implemented and verified:
 - **Queue Integration:** BullMQ queue for order execution jobs with exponential backoff retries.
 - **Worker Process:** Consumes jobs from queue, processes orders through full lifecycle (pending → routing → building → submitted → confirmed/failed), fetches quotes from mock DEX router (Raydium vs Meteora), selects best route based on effective output after fees, and simulates execution with random delays and fake tx_hashes.
 - **Mock DEX Router:** Simulates quote fetching from Raydium and Meteora with realistic delays (200-400ms), random price variance (±5%), and different fees (30bps for Raydium, 25bps for Meteora), compares effective output to choose the best DEX.
+- **Real-time WebSocket Updates:** WebSocket endpoint at /ws/orders/:orderId streams order status updates in real-time as the worker progresses through the lifecycle. Uses Redis pub/sub for event broadcasting. Clients receive JSON messages like `{"type": "status", "orderId": "...", "status": "routing", "chosenDex": "raydium"}`.
 
 **Next Steps (Not Yet Implemented):**
-- Add WebSocket updates for real-time order status streaming.
 - Implement unit/integration tests.
 - Create Postman collection for API testing.
 - Deploy to hosting platform with demo video.
