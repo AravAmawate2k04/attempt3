@@ -1,5 +1,77 @@
+import { v4 as uuidv4 } from 'uuid';
 import { query } from '../db/index';
 import { Order, OrderStatus } from '../models/order';
+
+interface CreateOrderInput {
+  orderType: 'market';
+  tokenIn: string;
+  tokenOut: string;
+  amountIn: number;
+}
+
+export async function createOrder(input: CreateOrderInput): Promise<Order> {
+  const id = uuidv4();
+
+  const status: OrderStatus = 'pending';
+
+  const sql = `
+    INSERT INTO orders (
+      id,
+      order_type,
+      token_in,
+      token_out,
+      amount_in,
+      status,
+      chosen_dex,
+      executed_price,
+      tx_hash,
+      failed_reason
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, NULL, NULL, NULL, NULL)
+    RETURNING
+      id,
+      order_type,
+      token_in,
+      token_out,
+      amount_in,
+      status,
+      chosen_dex,
+      executed_price,
+      tx_hash,
+      failed_reason,
+      created_at,
+      updated_at
+  `;
+
+  const params = [
+    id,
+    input.orderType,
+    input.tokenIn,
+    input.tokenOut,
+    input.amountIn,
+    status,
+  ];
+
+  const { rows } = await query(sql, params);
+  const row = rows[0];
+
+  const order: Order = {
+    id: row.id,
+    orderType: row.order_type,
+    tokenIn: row.token_in,
+    tokenOut: row.token_out,
+    amountIn: Number(row.amount_in),
+    status: row.status,
+    chosenDex: row.chosen_dex,
+    executedPrice: row.executed_price !== null ? Number(row.executed_price) : null,
+    txHash: row.tx_hash,
+    failedReason: row.failed_reason,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+
+  return order;
+}
 
 export class OrderRepository {
   async createOrder(order: Omit<Order, 'createdAt' | 'updatedAt'>): Promise<Order> {
