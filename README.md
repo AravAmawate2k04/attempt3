@@ -36,3 +36,46 @@ In a real devnet setup, the mock router can be swapped with adapters that call t
 - **Runtime Architecture:** 
   - One API server (HTTP + WebSocket)
   - One worker process consuming jobs from the order queue
+
+## Database Layer
+
+### PostgreSQL Schema
+
+We use PostgreSQL to persist order history, status updates, and failure reasons as required by the spec. The schema includes:
+
+- `id` (UUID): Unique order identifier
+- `order_type`: Currently 'market' (extensible to 'limit', 'sniper')
+- `token_in/out`: Token symbols
+- `amount_in`: Input amount
+- `status`: Order lifecycle status ('pending', 'routing', 'building', 'submitted', 'confirmed', 'failed')
+- `chosen_dex`: 'raydium' or 'meteora' (null initially)
+- `executed_price`: Final execution price (null until confirmed)
+- `tx_hash`: Blockchain transaction hash (null until submitted)
+- `failed_reason`: Error details if failed
+- `created_at/updated_at`: Timestamps with auto-update trigger
+
+### Alternative Approaches Considered
+
+1. **In-Memory Storage (Not Chosen):**
+   - Pros: Simple, fast, no external dependencies
+   - Cons: Data lost on restart, no persistence, violates spec requirement for PostgreSQL history
+
+2. **Redis-Only Storage (Not Chosen):**
+   - Pros: Fast key-value storage, already used for queues
+   - Cons: Not relational, complex queries hard, no ACID transactions, spec requires PostgreSQL
+
+3. **SQLite (Not Chosen):**
+   - Pros: File-based, no server setup, good for development
+   - Cons: Not suitable for concurrent production use, spec specifies PostgreSQL
+
+4. **ORM vs Raw SQL (Chose Raw SQL):**
+   - Considered Prisma/TypeORM for type safety and migrations
+   - Chose raw SQL with pg library for simplicity and direct control
+   - Flaw: Manual query writing, potential SQL injection if not careful (mitigated with parameterized queries)
+
+### Connection and Initialization
+
+- Uses `pg` Pool for connection management
+- Environment-based config via dotenv
+- Init script creates table and triggers
+- Test script verifies connectivity and schema

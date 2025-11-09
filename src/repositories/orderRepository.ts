@@ -1,0 +1,85 @@
+import { query } from '../db/index';
+import { Order, OrderStatus } from '../models/order';
+
+export class OrderRepository {
+  async createOrder(order: Omit<Order, 'createdAt' | 'updatedAt'>): Promise<Order> {
+    const { rows } = await query(
+      `INSERT INTO orders (id, order_type, token_in, token_out, amount_in, status, chosen_dex, executed_price, tx_hash, failed_reason)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING *`,
+      [
+        order.id,
+        order.orderType,
+        order.tokenIn,
+        order.tokenOut,
+        order.amountIn,
+        order.status,
+        order.chosenDex,
+        order.executedPrice,
+        order.txHash,
+        order.failedReason,
+      ]
+    );
+    const row = rows[0];
+    return {
+      id: row.id,
+      orderType: row.order_type,
+      tokenIn: row.token_in,
+      tokenOut: row.token_out,
+      amountIn: parseFloat(row.amount_in),
+      status: row.status,
+      chosenDex: row.chosen_dex,
+      executedPrice: row.executed_price ? parseFloat(row.executed_price) : null,
+      txHash: row.tx_hash,
+      failedReason: row.failed_reason,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at),
+    };
+  }
+
+  async updateOrderStatus(id: string, status: OrderStatus, chosenDex?: 'raydium' | 'meteora' | null, executedPrice?: number | null, txHash?: string | null, failedReason?: string | null): Promise<void> {
+    const fields: string[] = ['status = $2'];
+    const values: any[] = [id, status];
+    let paramIndex = 3;
+
+    if (chosenDex !== undefined) {
+      fields.push(`chosen_dex = $${paramIndex++}`);
+      values.push(chosenDex);
+    }
+    if (executedPrice !== undefined) {
+      fields.push(`executed_price = $${paramIndex++}`);
+      values.push(executedPrice);
+    }
+    if (txHash !== undefined) {
+      fields.push(`tx_hash = $${paramIndex++}`);
+      values.push(txHash);
+    }
+    if (failedReason !== undefined) {
+      fields.push(`failed_reason = $${paramIndex++}`);
+      values.push(failedReason);
+    }
+
+    const sql = `UPDATE orders SET ${fields.join(', ')} WHERE id = $1`;
+    await query(sql, values);
+  }
+
+  async getOrderById(id: string): Promise<Order | null> {
+    const { rows } = await query('SELECT * FROM orders WHERE id = $1', [id]);
+    if (rows.length === 0) return null;
+    const row = rows[0];
+    return {
+      id: row.id,
+      orderType: row.order_type,
+      tokenIn: row.token_in,
+      tokenOut: row.token_out,
+      amountIn: parseFloat(row.amount_in),
+      status: row.status,
+      chosenDex: row.chosen_dex,
+      executedPrice: row.executed_price ? parseFloat(row.executed_price) : null,
+      txHash: row.tx_hash,
+      failedReason: row.failed_reason,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at),
+    };
+  }
+}

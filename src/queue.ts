@@ -1,13 +1,16 @@
 import { Worker, Queue } from 'bullmq';
 import { MockDexRouter } from './dexRouter';
 import { Order, OrderStatus } from './types';
+import { OrderRepository } from './repositories/orderRepository';
 
 export class OrderQueue {
   private queue: Queue | undefined;
   private router: MockDexRouter | undefined;
   private statusCallbacks: Map<string, (status: OrderStatus) => void> = new Map();
+  private repository: OrderRepository;
 
-  constructor() {
+  constructor(repository: OrderRepository) {
+    this.repository = repository;
     try {
       this.queue = new Queue('orders', {
         connection: {
@@ -57,16 +60,18 @@ export class OrderQueue {
   }
 
   private updateStatus(orderId: string, status: OrderStatus['status'], message?: string, txHash?: string, executedPrice?: number): void {
-    const orderStatus: OrderStatus = {
-      orderId,
-      status,
-      message,
-      txHash,
-      executedPrice,
-      timestamp: new Date(),
-    };
+    // Update in DB
+    this.repository.updateOrderStatus(orderId, status, undefined, executedPrice, txHash, message).catch(err => console.error('Failed to update status in DB:', err));
     const callback = this.statusCallbacks.get(orderId);
     if (callback) {
+      const orderStatus: OrderStatus = {
+        orderId,
+        status,
+        message,
+        txHash,
+        executedPrice,
+        timestamp: new Date(),
+      };
       callback(orderStatus);
     }
     console.log(`Order ${orderId}: ${status}`, message ? ` - ${message}` : '');
@@ -88,8 +93,11 @@ export class OrderQueue {
       const result = await this.router.executeSwap(dex, order);
 
       this.updateStatus(order.id, 'confirmed', undefined, result.txHash, result.executedPrice);
+      // Update chosenDex
+      await this.repository.updateOrderStatus(order.id, 'confirmed', dex, result.executedPrice, result.txHash);
     } catch (error) {
       this.updateStatus(order.id, 'failed', (error as Error).message);
+      await this.repository.updateOrderStatus(order.id, 'failed', undefined, undefined, undefined, (error as Error).message);
       throw error; // Re-throw for worker
     }
   }
