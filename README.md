@@ -50,9 +50,9 @@ The following components have been implemented and verified:
 - **Worker Process:** Consumes jobs from queue, processes orders through full lifecycle (pending → routing → building → submitted → confirmed/failed), fetches quotes from mock DEX router (Raydium vs Meteora), selects best route based on effective output after fees, and simulates execution with random delays and fake tx_hashes. Handles failures with retries and final failed status.
 - **Mock DEX Router:** Simulates quote fetching from Raydium and Meteora with realistic delays (200-400ms), random price variance (±5%), and different fees (30bps for Raydium, 25bps for Meteora), compares effective output to choose the best DEX.
 - **Real-time WebSocket Updates:** WebSocket endpoint at /ws/orders/:orderId streams order status updates in real-time as the worker progresses through the lifecycle. Uses Redis pub/sub for event broadcasting. Clients receive JSON messages like `{"type": "status", "orderId": "...", "status": "routing", "chosenDex": "raydium"}` or `{"type": "status", "orderId": "...", "status": "failed", "error": "..."}`.
+- **Automated Tests:** Jest setup with 10 tests covering DEX routing logic (Raydium vs Meteora selection), order repository DB operations (create, fetch, update status, routing decision, success/failure), and API route validations (valid payloads, rejections for invalid inputs).
 
 **Next Steps (Not Yet Implemented):**
-- Implement unit/integration tests.
 - Create Postman collection for API testing.
 - Deploy to hosting platform with demo video.
 
@@ -106,7 +106,12 @@ The following components have been implemented and verified:
 
 3. Test the API:
    - Health check: `curl http://localhost:3000/health`
-   - Create order: `curl -X POST http://localhost:3000/api/orders/execute -H "Content-Type: application/json" -d '{"type": "market", "tokenIn": "SOL", "tokenOut": "USDC", "amount": 1}'`
+   - Create order: `curl -X POST http://localhost:3000/api/orders/execute -H "Content-Type: application/json" -d '{"orderType": "market", "tokenIn": "SOL", "tokenOut": "USDC", "amount": 1}'`
+
+4. Run tests:
+   ```bash
+   npm test
+   ```
 
 ### Building and Production
 - Build: `npm run build`
