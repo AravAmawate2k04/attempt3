@@ -4,7 +4,7 @@ import {
   redisSub,
   ORDER_STATUS_CHANNEL,
   OrderStatusEvent,
-} from '../queue/orderEvents';
+} from '../queue/orderEvents.js';
 
 export async function registerOrderStatusWs(app: FastifyInstance) {
   const clients = new Map<string, Set<SocketStream>>();

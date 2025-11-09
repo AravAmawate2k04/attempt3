@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
-import { createOrder, getOrderById } from '../repositories/orderRepository';
-import { orderQueue } from '../queue/orderQueue';  // ⬅️ add this
+import { createOrder, getOrderById } from '../repositories/orderRepository.js';
+import { orderQueue } from '../queue/orderQueue.js';  // ⬅️ add this
 
 interface ExecuteOrderBody {
   orderType: 'market';

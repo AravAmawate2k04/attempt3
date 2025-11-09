@@ -1,4 +1,4 @@
-import { Order, OrderStatus } from '../models/order';
+import { Order, OrderStatus } from '../models/order.js';
 interface CreateOrderInput {
     orderType: 'market';
     tokenIn: string;

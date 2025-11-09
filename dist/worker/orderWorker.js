@@ -1,48 +1,46 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const bullmq_1 = require("bullmq");
-const orderQueue_1 = require("../queue/orderQueue");
-const mockDexRouter_1 = require("../services/mockDexRouter");
-const orderRepository_1 = require("../repositories/orderRepository");
-const orderEvents_1 = require("../queue/orderEvents");
-const router = new mockDexRouter_1.MockDexRouter();
+import { Worker } from 'bullmq';
+import { ORDER_QUEUE_NAME, redisConnection } from '../queue/orderQueue';
+import { MockDexRouter } from '../services/mockDexRouter';
+import { getOrderById, updateOrderStatus, setOrderRoutingDecision, setOrderExecutionSuccess, setOrderExecutionFailed, } from '../repositories/orderRepository';
+import { publishOrderStatus } from '../queue/orderEvents';
+const router = new MockDexRouter();
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 async function processOrder(job) {
     const { orderId } = job.data;
     console.log(`Worker: starting processing order ${orderId}, jobId=${job.id}`);
-    const order = await (0, orderRepository_1.getOrderById)(orderId);
+    const order = await getOrderById(orderId);
     if (!order) {
         throw new Error(`Order ${orderId} not found`);
     }
     // initial "pending" (optional but nice)
-    await (0, orderEvents_1.publishOrderStatus)({
+    await publishOrderStatus({
         orderId,
         status: order.status, // should be "pending"
     });
     // 1) routing: get best DEX
-    await (0, orderRepository_1.updateOrderStatus)(orderId, 'routing');
-    await (0, orderEvents_1.publishOrderStatus)({ orderId, status: 'routing' });
+    await updateOrderStatus(orderId, 'routing');
+    await publishOrderStatus({ orderId, status: 'routing' });
     const { bestDex, bestQuote, raydiumQuote, meteoraQuote } = await router.getBestRoute(order.tokenIn, order.tokenOut, order.amountIn);
     console.log(`Worker: quotes for order ${orderId}: ` +
         `Raydium=${raydiumQuote.price.toFixed(4)} (fee ${raydiumQuote.feeBps}bps), ` +
         `Meteora=${meteoraQuote.price.toFixed(4)} (fee ${meteoraQuote.feeBps}bps); ` +
         `chosen=${bestDex} @ ${bestQuote.price.toFixed(4)}`);
-    await (0, orderRepository_1.setOrderRoutingDecision)(orderId, bestDex);
-    await (0, orderEvents_1.publishOrderStatus)({
+    await setOrderRoutingDecision(orderId, bestDex);
+    await publishOrderStatus({
         orderId,
         status: 'routing',
         chosenDex: bestDex,
     });
     // 2) building
-    await (0, orderRepository_1.updateOrderStatus)(orderId, 'building');
-    await (0, orderEvents_1.publishOrderStatus)({ orderId, status: 'building' });
+    await updateOrderStatus(orderId, 'building');
+    await publishOrderStatus({ orderId, status: 'building' });
     console.log(`Worker: building transaction for order ${orderId}`);
     await sleep(500); // simulate build time
     // 3) submitted
-    await (0, orderRepository_1.updateOrderStatus)(orderId, 'submitted');
-    await (0, orderEvents_1.publishOrderStatus)({ orderId, status: 'submitted' });
+    await updateOrderStatus(orderId, 'submitted');
+    await publishOrderStatus({ orderId, status: 'submitted' });
     console.log(`Worker: submitted transaction for order ${orderId}`);
     // 4) execution (confirmed or failed)
     try {
@@ -53,8 +51,8 @@ async function processOrder(job) {
         if (slippage > maxSlippage) {
             throw new Error(`Slippage too high: ${slippage.toFixed(4)} > ${maxSlippage}, expected ${bestQuote.price.toFixed(4)}, got ${exec.executedPrice.toFixed(4)}`);
         }
-        await (0, orderRepository_1.setOrderExecutionSuccess)(orderId, exec.executedPrice, exec.txHash);
-        await (0, orderEvents_1.publishOrderStatus)({
+        await setOrderExecutionSuccess(orderId, exec.executedPrice, exec.txHash);
+        await publishOrderStatus({
             orderId,
             status: 'confirmed',
             chosenDex: bestDex,
@@ -65,8 +63,8 @@ async function processOrder(job) {
     }
     catch (err) {
         console.error(`Worker: execution failed for order ${orderId}`, err);
-        await (0, orderRepository_1.setOrderExecutionFailed)(orderId, err.message || 'Unknown error');
-        await (0, orderEvents_1.publishOrderStatus)({
+        await setOrderExecutionFailed(orderId, err.message || 'Unknown error');
+        await publishOrderStatus({
             orderId,
             status: 'failed',
             error: err.message || 'Unknown error',
@@ -75,7 +73,7 @@ async function processOrder(job) {
     }
 }
 function startWorker() {
-    const worker = new bullmq_1.Worker(orderQueue_1.ORDER_QUEUE_NAME, async (job) => {
+    const worker = new Worker(ORDER_QUEUE_NAME, async (job) => {
         console.log(`Worker: job ${job.id} attempt #${job.attemptsMade + 1} for order ${job.data.orderId}`);
         try {
             await processOrder(job);
@@ -85,7 +83,7 @@ function startWorker() {
             throw err; // BullMQ will retry up to "attempts"
         }
     }, {
-        connection: orderQueue_1.redisConnection,
+        connection: redisConnection,
         concurrency: 10,
     });
     worker.on('completed', (job) => {

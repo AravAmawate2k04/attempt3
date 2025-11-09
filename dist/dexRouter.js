@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.MockDexRouter = void 0;
-class MockDexRouter {
+export class MockDexRouter {
     constructor() {
         this.basePrices = new Map([
             ['SOL-USDC', 150], // Example prices
@@ -49,5 +46,4 @@ class MockDexRouter {
         return { txHash, executedPrice };
     }
 }
-exports.MockDexRouter = MockDexRouter;
 //# sourceMappingURL=dexRouter.js.map

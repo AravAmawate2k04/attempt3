@@ -1,22 +1,19 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.OrderQueue = void 0;
-const bullmq_1 = require("bullmq");
-const dexRouter_1 = require("./dexRouter");
-class OrderQueue {
+import { Worker, Queue } from 'bullmq';
+import { MockDexRouter } from './dexRouter';
+export class OrderQueue {
     constructor(repository) {
         this.statusCallbacks = new Map();
         this.repository = repository;
         try {
-            this.queue = new bullmq_1.Queue('orders', {
+            this.queue = new Queue('orders', {
                 connection: {
                     host: 'localhost',
                     port: 6379,
                 },
             });
-            this.router = new dexRouter_1.MockDexRouter();
+            this.router = new MockDexRouter();
             // Set up worker
-            const worker = new bullmq_1.Worker('orders', async (job) => {
+            const worker = new Worker('orders', async (job) => {
                 const order = job.data;
                 await this.processOrder(order);
             }, {
@@ -95,5 +92,4 @@ class OrderQueue {
         }
     }
 }
-exports.OrderQueue = OrderQueue;
 //# sourceMappingURL=queue.js.map

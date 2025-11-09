@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import { query } from '../db/index';
-import { Order, OrderStatus } from '../models/order';
+import { query } from '../db/index.js';
+import { Order, OrderStatus } from '../models/order.js';
 
 interface CreateOrderInput {
   orderType: 'market';

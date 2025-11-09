@@ -1,9 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.orderRoutes = void 0;
-const orderRepository_1 = require("../repositories/orderRepository");
-const orderQueue_1 = require("../queue/orderQueue"); // ⬅️ add this
-const orderRoutes = async (app) => {
+import { createOrder, getOrderById } from '../repositories/orderRepository.js';
+import { orderQueue } from '../queue/orderQueue.js'; // ⬅️ add this
+export const orderRoutes = async (app) => {
     app.post('/execute', async (request, reply) => {
         try {
             const { orderType, tokenIn, tokenOut, amount } = request.body;
@@ -22,14 +19,14 @@ const orderRoutes = async (app) => {
                 reply.code(400);
                 return { error: 'amount must be a positive number' };
             }
-            const order = await (0, orderRepository_1.createOrder)({
+            const order = await createOrder({
                 orderType,
                 tokenIn,
                 tokenOut,
                 amountIn: amount,
             });
             // Enqueue job for processing this order
-            await orderQueue_1.orderQueue.add('execute', { orderId: order.id }, {
+            await orderQueue.add('execute', { orderId: order.id }, {
                 attempts: 3,
                 backoff: {
                     type: 'exponential',
@@ -49,7 +46,7 @@ const orderRoutes = async (app) => {
     app.get('/:id', async (request, reply) => {
         try {
             const { id } = request.params;
-            const order = await (0, orderRepository_1.getOrderById)(id);
+            const order = await getOrderById(id);
             if (!order) {
                 reply.code(404);
                 return { error: 'Order not found' };
@@ -63,5 +60,4 @@ const orderRoutes = async (app) => {
         }
     });
 };
-exports.orderRoutes = orderRoutes;
 //# sourceMappingURL=orders.js.map

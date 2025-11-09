@@ -1,13 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerOrderStatusWs = registerOrderStatusWs;
-const orderEvents_1 = require("../queue/orderEvents");
-async function registerOrderStatusWs(app) {
+import { redisSub, ORDER_STATUS_CHANNEL, } from '../queue/orderEvents.js';
+export async function registerOrderStatusWs(app) {
     const clients = new Map();
     // Subscribe to Redis channel
-    await orderEvents_1.redisSub.subscribe(orderEvents_1.ORDER_STATUS_CHANNEL);
-    orderEvents_1.redisSub.on('message', (channel, message) => {
-        if (channel !== orderEvents_1.ORDER_STATUS_CHANNEL)
+    await redisSub.subscribe(ORDER_STATUS_CHANNEL);
+    redisSub.on('message', (channel, message) => {
+        if (channel !== ORDER_STATUS_CHANNEL)
             return;
         let event;
         try {

@@ -1,14 +1,9 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const fs_1 = __importDefault(require("fs"));
-const index_1 = require("./index");
+import fs from 'fs';
+import { query } from './index';
 async function initDB() {
     try {
-        const sql = fs_1.default.readFileSync('sql/create_orders_table.sql', 'utf8');
-        await (0, index_1.query)(sql);
+        const sql = fs.readFileSync('sql/create_orders_table.sql', 'utf8');
+        await query(sql);
         console.log('Orders table created successfully');
     }
     catch (err) {

@@ -2,8 +2,13 @@ import Fastify from 'fastify';
 import { fastifyWebsocket } from '@fastify/websocket';
 import fastifyStatic from '@fastify/static';
 import { join } from 'path';
-import { orderRoutes } from './routes/orders';
-import { registerOrderStatusWs } from './ws/orderStatusGateway';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { orderRoutes } from './routes/orders.js';
+import { registerOrderStatusWs } from './ws/orderStatusGateway.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const PORT = Number(process.env.PORT) || 3000;
 

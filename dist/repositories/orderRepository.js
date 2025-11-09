@@ -1,16 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.OrderRepository = void 0;
-exports.createOrder = createOrder;
-exports.getOrderById = getOrderById;
-exports.updateOrderStatus = updateOrderStatus;
-exports.setOrderRoutingDecision = setOrderRoutingDecision;
-exports.setOrderExecutionSuccess = setOrderExecutionSuccess;
-exports.setOrderExecutionFailed = setOrderExecutionFailed;
-const uuid_1 = require("uuid");
-const index_1 = require("../db/index");
-async function createOrder(input) {
-    const id = (0, uuid_1.v4)();
+import { v4 as uuidv4 } from 'uuid';
+import { query } from '../db/index.js';
+export async function createOrder(input) {
+    const id = uuidv4();
     const status = 'pending';
     const sql = `
     INSERT INTO orders (
@@ -48,7 +39,7 @@ async function createOrder(input) {
         input.amountIn,
         status,
     ];
-    const { rows } = await (0, index_1.query)(sql, params);
+    const { rows } = await query(sql, params);
     const row = rows[0];
     const order = {
         id: row.id,
@@ -66,7 +57,7 @@ async function createOrder(input) {
     };
     return order;
 }
-async function getOrderById(orderId) {
+export async function getOrderById(orderId) {
     const sql = `
     SELECT
       id,
@@ -84,7 +75,7 @@ async function getOrderById(orderId) {
     FROM orders
     WHERE id = $1
   `;
-    const { rows } = await (0, index_1.query)(sql, [orderId]);
+    const { rows } = await query(sql, [orderId]);
     if (rows.length === 0)
         return null;
     const row = rows[0];
@@ -104,23 +95,23 @@ async function getOrderById(orderId) {
     };
     return order;
 }
-async function updateOrderStatus(orderId, status) {
+export async function updateOrderStatus(orderId, status) {
     const sql = `
     UPDATE orders
     SET status = $2
     WHERE id = $1
   `;
-    await (0, index_1.query)(sql, [orderId, status]);
+    await query(sql, [orderId, status]);
 }
-async function setOrderRoutingDecision(orderId, chosenDex) {
+export async function setOrderRoutingDecision(orderId, chosenDex) {
     const sql = `
     UPDATE orders
     SET status = 'routing', chosen_dex = $2
     WHERE id = $1
   `;
-    await (0, index_1.query)(sql, [orderId, chosenDex]);
+    await query(sql, [orderId, chosenDex]);
 }
-async function setOrderExecutionSuccess(orderId, executedPrice, txHash) {
+export async function setOrderExecutionSuccess(orderId, executedPrice, txHash) {
     const sql = `
     UPDATE orders
     SET status = 'confirmed',
@@ -128,20 +119,20 @@ async function setOrderExecutionSuccess(orderId, executedPrice, txHash) {
         tx_hash = $3
     WHERE id = $1
   `;
-    await (0, index_1.query)(sql, [orderId, executedPrice, txHash]);
+    await query(sql, [orderId, executedPrice, txHash]);
 }
-async function setOrderExecutionFailed(orderId, reason) {
+export async function setOrderExecutionFailed(orderId, reason) {
     const sql = `
     UPDATE orders
     SET status = 'failed',
         failed_reason = $2
     WHERE id = $1
   `;
-    await (0, index_1.query)(sql, [orderId, reason]);
+    await query(sql, [orderId, reason]);
 }
-class OrderRepository {
+export class OrderRepository {
     async createOrder(order) {
-        const { rows } = await (0, index_1.query)(`INSERT INTO orders (id, order_type, token_in, token_out, amount_in, status, chosen_dex, executed_price, tx_hash, failed_reason)
+        const { rows } = await query(`INSERT INTO orders (id, order_type, token_in, token_out, amount_in, status, chosen_dex, executed_price, tx_hash, failed_reason)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`, [
             order.id,
@@ -192,10 +183,10 @@ class OrderRepository {
             values.push(failedReason);
         }
         const sql = `UPDATE orders SET ${fields.join(', ')} WHERE id = $1`;
-        await (0, index_1.query)(sql, values);
+        await query(sql, values);
     }
     async getOrderById(id) {
-        const { rows } = await (0, index_1.query)('SELECT * FROM orders WHERE id = $1', [id]);
+        const { rows } = await query('SELECT * FROM orders WHERE id = $1', [id]);
         if (rows.length === 0)
             return null;
         const row = rows[0];
@@ -215,5 +206,4 @@ class OrderRepository {
         };
     }
 }
-exports.OrderRepository = OrderRepository;
 //# sourceMappingURL=orderRepository.js.map

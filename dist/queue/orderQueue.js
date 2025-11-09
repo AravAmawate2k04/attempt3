@@ -1,23 +1,16 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.orderQueue = exports.ORDER_QUEUE_NAME = exports.redisConnection = void 0;
-const bullmq_1 = require("bullmq");
-const ioredis_1 = __importDefault(require("ioredis"));
+import { Queue } from 'bullmq';
+import IORedis from 'ioredis';
 const redisUrl = process.env.REDIS_URL;
 const redisHost = process.env.REDIS_HOST || '127.0.0.1';
 const redisPort = Number(process.env.REDIS_PORT) || 6379;
-const redisOptions = redisUrl
-    ? { url: redisUrl } // Render: use full URL
-    : {
+export const redisConnection = redisUrl
+    ? new IORedis(redisUrl)
+    : new IORedis({
         host: redisHost,
         port: redisPort,
-    };
-exports.redisConnection = new ioredis_1.default(redisOptions);
-exports.ORDER_QUEUE_NAME = 'order-execution';
-exports.orderQueue = new bullmq_1.Queue(exports.ORDER_QUEUE_NAME, {
-    connection: exports.redisConnection,
+    });
+export const ORDER_QUEUE_NAME = 'order-execution';
+export const orderQueue = new Queue(ORDER_QUEUE_NAME, {
+    connection: redisConnection,
 });
 //# sourceMappingURL=orderQueue.js.map

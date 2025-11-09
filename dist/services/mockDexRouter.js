@@ -1,6 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.MockDexRouter = void 0;
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -8,7 +5,7 @@ function sleep(ms) {
 function randomBetween(min, max) {
     return Math.random() * (max - min) + min;
 }
-class MockDexRouter {
+export class MockDexRouter {
     async getRaydiumQuote(tokenIn, tokenOut, amountIn) {
         // simulate network delay
         await sleep(200 + Math.random() * 200);
@@ -58,5 +55,4 @@ class MockDexRouter {
         };
     }
 }
-exports.MockDexRouter = MockDexRouter;
 //# sourceMappingURL=mockDexRouter.js.map
