@@ -1,7 +1,6 @@
 import Fastify from 'fastify';
 import { fastifyWebsocket } from '@fastify/websocket';
 import fastifyStatic from '@fastify/static';
-import '@fastify/static';
 import { join } from 'path';
 import { orderRoutes } from './routes/orders';
 import { registerOrderStatusWs } from './ws/orderStatusGateway';

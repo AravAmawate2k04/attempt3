@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Order execution engine with DEX routing and WebSocket updates",
   "main": "dist/index.js",
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
