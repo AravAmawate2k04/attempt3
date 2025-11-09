@@ -45,12 +45,14 @@ async function processOrder(job) {
     await (0, orderEvents_1.publishOrderStatus)({ orderId, status: 'submitted' });
     console.log(`Worker: submitted transaction for order ${orderId}`);
     // 4) execution (confirmed or failed)
-    // TEMPORARY: force a failure to test retries & failed status
-    if (process.env.FORCE_FAIL === '1') {
-        throw new Error('Simulated execution failure');
-    }
     try {
         const exec = await router.executeSwap(bestDex, order.tokenIn, order.tokenOut, order.amountIn, bestQuote.price);
+        // Slippage protection: check if executed price deviates more than 1% from quoted price
+        const slippage = Math.abs(exec.executedPrice - bestQuote.price) / bestQuote.price;
+        const maxSlippage = 0.01; // 1%
+        if (slippage > maxSlippage) {
+            throw new Error(`Slippage too high: ${slippage.toFixed(4)} > ${maxSlippage}, expected ${bestQuote.price.toFixed(4)}, got ${exec.executedPrice.toFixed(4)}`);
+        }
         await (0, orderRepository_1.setOrderExecutionSuccess)(orderId, exec.executedPrice, exec.txHash);
         await (0, orderEvents_1.publishOrderStatus)({
             orderId,

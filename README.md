@@ -248,6 +248,28 @@ With 10 concurrent workers and ~2.5s execution time, system can process ~240 ord
 - Integration: queue processing simulation
 - WebSocket event publishing (mocked)
 
+## Deployed Demo (Optional)
+
+The API is also deployed at:
+
+- Base URL: https://<your-app>.onrender.com
+
+Key endpoints:
+
+- Health: `GET /health`
+- Submit order: `POST /api/orders/execute`
+- WebSocket: `wss://<your-app>.onrender.com/ws/orders/:orderId`
+
+To deploy on Render.com:
+
+1. Push code to GitHub
+2. Create Render account
+3. Create PostgreSQL database service
+4. Create Redis service
+5. Create Web Service for server: `npm run build` then `npm run start`
+6. Create Background Worker for worker: `npm run build` then `npm run start:worker`
+7. Set environment variables: `DATABASE_URL`, `REDIS_URL`, `PORT`
+
 ## Limitations & Assumptions
 - Mock DEX layer (easily replaceable with real SDKs)
 - No user-configurable slippage (fixed 1% threshold)

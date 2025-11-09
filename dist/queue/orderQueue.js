@@ -6,12 +6,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.orderQueue = exports.ORDER_QUEUE_NAME = exports.redisConnection = void 0;
 const bullmq_1 = require("bullmq");
 const ioredis_1 = __importDefault(require("ioredis"));
+const redisUrl = process.env.REDIS_URL;
 const redisHost = process.env.REDIS_HOST || '127.0.0.1';
 const redisPort = Number(process.env.REDIS_PORT) || 6379;
-exports.redisConnection = new ioredis_1.default({
-    host: redisHost,
-    port: redisPort,
-});
+const redisOptions = redisUrl
+    ? { url: redisUrl } // Render: use full URL
+    : {
+        host: redisHost,
+        port: redisPort,
+    };
+exports.redisConnection = new ioredis_1.default(redisOptions);
 exports.ORDER_QUEUE_NAME = 'order-execution';
 exports.orderQueue = new bullmq_1.Queue(exports.ORDER_QUEUE_NAME, {
     connection: exports.redisConnection,

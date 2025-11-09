@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/server.js",
+    "start:worker": "node dist/worker/orderWorker.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "db:init": "ts-node src/db/init.ts",
     "db:test": "ts-node src/db/testConnection.ts",

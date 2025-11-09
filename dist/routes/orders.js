@@ -16,6 +16,8 @@ const orderRoutes = async (app) => {
                 reply.code(400);
                 return { error: 'tokenIn and tokenOut are required' };
             }
+            // Note: For SOL as native token, in a real implementation this would handle wrapping to wSOL
+            // Here in mock, we treat SOL as a generic token string
             if (typeof amount !== 'number' || amount <= 0) {
                 reply.code(400);
                 return { error: 'amount must be a positive number' };
@@ -40,6 +42,22 @@ const orderRoutes = async (app) => {
         }
         catch (err) {
             request.log.error({ err }, 'Error in /api/orders/execute');
+            reply.code(500);
+            return { error: 'Internal server error' };
+        }
+    });
+    app.get('/:id', async (request, reply) => {
+        try {
+            const { id } = request.params;
+            const order = await (0, orderRepository_1.getOrderById)(id);
+            if (!order) {
+                reply.code(404);
+                return { error: 'Order not found' };
+            }
+            return order;
+        }
+        catch (err) {
+            request.log.error({ err }, 'Error in /api/orders/:id');
             reply.code(500);
             return { error: 'Internal server error' };
         }
