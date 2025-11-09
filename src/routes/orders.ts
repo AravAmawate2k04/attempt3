@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
-import { createOrder } from '../repositories/orderRepository';
+import { createOrder, getOrderById } from '../repositories/orderRepository';
 import { orderQueue } from '../queue/orderQueue';  // ⬅️ add this
 
 interface ExecuteOrderBody {
@@ -24,6 +24,9 @@ export const orderRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         reply.code(400);
         return { error: 'tokenIn and tokenOut are required' };
       }
+
+      // Note: For SOL as native token, in a real implementation this would handle wrapping to wSOL
+      // Here in mock, we treat SOL as a generic token string
 
       if (typeof amount !== 'number' || amount <= 0) {
         reply.code(400);
@@ -55,6 +58,22 @@ export const orderRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       return { orderId: order.id };
     } catch (err) {
       request.log.error({ err }, 'Error in /api/orders/execute');
+      reply.code(500);
+      return { error: 'Internal server error' };
+    }
+  });
+
+  app.get('/:id', async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const order = await getOrderById(id);
+      if (!order) {
+        reply.code(404);
+        return { error: 'Order not found' };
+      }
+      return order;
+    } catch (err) {
+      request.log.error({ err }, 'Error in /api/orders/:id');
       reply.code(500);
       return { error: 'Internal server error' };
     }

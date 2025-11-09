@@ -1,0 +1,91 @@
+{
+  "info": {
+    "name": "Order Execution Engine – Market Orders",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Execute Order - Valid",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"orderType\": \"market\", \"tokenIn\": \"SOL\", \"tokenOut\": \"USDC\", \"amount\": 1}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/orders/execute",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "orders", "execute"]
+        }
+      }
+    },
+    {
+      "name": "Execute Order - Invalid OrderType",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"orderType\": \"limit\", \"tokenIn\": \"SOL\", \"tokenOut\": \"USDC\", \"amount\": 1}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/orders/execute",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "orders", "execute"]
+        }
+      }
+    },
+    {
+      "name": "Execute Order - Invalid Amount",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"orderType\": \"market\", \"tokenIn\": \"SOL\", \"tokenOut\": \"USDC\", \"amount\": 0}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/orders/execute",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "orders", "execute"]
+        }
+      }
+    }
+  ]
+}

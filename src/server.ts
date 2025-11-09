@@ -1,5 +1,7 @@
 import Fastify from 'fastify';
 import { fastifyWebsocket } from '@fastify/websocket';
+import fastifyStatic from '@fastify/static';
+import path from 'path';
 import { orderRoutes } from './routes/orders';
 import { registerOrderStatusWs } from './ws/orderStatusGateway';
 
@@ -15,6 +17,12 @@ async function buildServer() {
 
   // Register WebSocket plugin (we'll use this later)
   await app.register(fastifyWebsocket);
+
+  // Serve static files from public directory
+  await app.register(fastifyStatic, {
+    root: path.join(__dirname, '../public'),
+    prefix: '/',
+  });
 
   // Simple health check route
   app.get('/health', async () => {

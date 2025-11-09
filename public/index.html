@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Execution Engine</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    h1 {
+      text-align: center;
+      color: #2563eb;
+      margin-bottom: 2rem;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border: 1px solid #e5e7eb;
+      margin-bottom: 1.5rem;
+      padding: 1.5rem;
+    }
+    .card h2 {
+      margin-top: 0;
+      color: #1f2937;
+      font-size: 1.25rem;
+    }
+    .form-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .form-group {
+      flex: 1;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    input {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    input:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .btn {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+    .btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    .error {
+      color: #dc2626;
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+    .status-timeline {
+      list-style: none;
+      padding: 0;
+    }
+    .status-item {
+      padding: 0.5rem 0;
+      border-left: 3px solid #e5e7eb;
+      padding-left: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .status-item.active {
+      border-left-color: #2563eb;
+      background: #eff6ff;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+    .badge-pending { background: #dbeafe; color: #1e40af; }
+    .badge-routing { background: #dbeafe; color: #1e40af; }
+    .badge-building { background: #dbeafe; color: #1e40af; }
+    .badge-submitted { background: #dbeafe; color: #1e40af; }
+    .badge-confirmed { background: #d1fae5; color: #065f46; }
+    .badge-failed { background: #fee2e2; color: #991b1b; }
+    .order-details {
+      background: #f9fafb;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+    }
+    .order-history {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .history-item {
+      padding: 0.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .history-item:hover {
+      background: #f3f4f6;
+    }
+    .legend {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.875rem;
+    }
+    @media (max-width: 768px) {
+      .form-row {
+        flex-direction: column;
+      }
+      .container {
+        margin: 1rem auto;
+        padding: 0 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Order Execution Engine</h1>
+
+    <div class="card">
+      <h2>Create Order</h2>
+      <form id="orderForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tokenIn">Token In</label>
+            <input type="text" id="tokenIn" placeholder="e.g. SOL" required>
+            <div class="error" id="tokenInError"></div>
+          </div>
+          <div class="form-group">
+            <label for="tokenOut">Token Out</label>
+            <input type="text" id="tokenOut" placeholder="e.g. USDC" required>
+            <div class="error" id="tokenOutError"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="amount">Amount</label>
+            <input type="number" id="amount" step="0.01" min="0" placeholder="e.g. 1.0" required>
+            <div class="error" id="amountError"></div>
+          </div>
+          <div class="form-group" style="display: flex; align-items: end;">
+            <button type="submit" class="btn" id="submitBtn">Execute Order</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Live Status</h2>
+      <div id="statusArea" style="display: none;">
+        <h3>Order Status Timeline</h3>
+        <ul class="status-timeline" id="statusTimeline"></ul>
+        <div class="order-details" id="orderDetails"></div>
+      </div>
+      <div id="noOrderMsg">No active order. Create one above to see live updates.</div>
+    </div>
+
+    <div class="card">
+      <h2>Order History</h2>
+      <div class="legend">
+        <div class="legend-item">
+          <span class="status-badge badge-pending">In Progress</span>
+        </div>
+        <div class="legend-item">
+          <span class="status-badge badge-confirmed">Confirmed</span>
+        </div>
+        <div class="legend-item">
+          <span class="status-badge badge-failed">Failed</span>
+        </div>
+      </div>
+      <div class="order-history" id="orderHistory"></div>
+    </div>
+  </div>
+
+  <script>
+    let currentOrderId = null;
+    let ws = null;
+    const orderHistory = [];
+
+    const form = document.getElementById('orderForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusArea = document.getElementById('statusArea');
+    const noOrderMsg = document.getElementById('noOrderMsg');
+    const statusTimeline = document.getElementById('statusTimeline');
+    const orderDetails = document.getElementById('orderDetails');
+    const orderHistoryEl = document.getElementById('orderHistory');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearErrors();
+
+      const tokenIn = document.getElementById('tokenIn').value.trim();
+      const tokenOut = document.getElementById('tokenOut').value.trim();
+      const amount = parseFloat(document.getElementById('amount').value);
+
+      if (!tokenIn) showError('tokenIn', 'Token In is required');
+      if (!tokenOut) showError('tokenOut', 'Token Out is required');
+      if (isNaN(amount) || amount <= 0) showError('amount', 'Amount must be a positive number');
+
+      if (document.querySelector('.error:not(:empty)')) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      try {
+        const response = await fetch('/api/orders/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderType: 'market', tokenIn, tokenOut, amount })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          currentOrderId = data.orderId;
+          connectWebSocket(currentOrderId);
+          statusArea.style.display = 'block';
+          noOrderMsg.style.display = 'none';
+          statusTimeline.innerHTML = '';
+          orderDetails.innerHTML = `<p><strong>Order ID:</strong> ${currentOrderId}</p>`;
+        } else {
+          showError('amount', data.error || 'Failed to create order');
+        }
+      } catch (error) {
+        showError('amount', 'Network error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Execute Order';
+      }
+    });
+
+    function connectWebSocket(orderId) {
+      if (ws) ws.close();
+      ws = new WebSocket(`ws://localhost:3000/ws/orders/${orderId}`);
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'status') {
+          updateStatus(data);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket closed');
+      };
+    }
+
+    function updateStatus(data) {
+      const status = data.status;
+      const li = document.createElement('li');
+      li.className = 'status-item active';
+      li.innerHTML = `
+        <span class="status-badge badge-${status}">${status}</span>
+        ${data.chosenDex ? ` - DEX: ${data.chosenDex}` : ''}
+        ${data.error ? ` - Error: ${data.error}` : ''}
+      `;
+      statusTimeline.appendChild(li);
+
+      if (status === 'confirmed' || status === 'failed') {
+        li.classList.add('active');
+        orderHistory.unshift({ id: currentOrderId, status, dex: data.chosenDex, price: data.executedPrice, error: data.error });
+        updateOrderHistory();
+        setTimeout(() => {
+          statusArea.style.display = 'none';
+          noOrderMsg.style.display = 'block';
+          currentOrderId = null;
+        }, 3000);
+      }
+
+      if (data.executedPrice) {
+        orderDetails.innerHTML += `<p><strong>Executed Price:</strong> ${data.executedPrice}</p>`;
+      }
+      if (data.txHash) {
+        orderDetails.innerHTML += `<p><strong>Tx Hash:</strong> ${data.txHash.substring(0, 10)}...</p>`;
+      }
+    }
+
+    function updateOrderHistory() {
+      orderHistoryEl.innerHTML = orderHistory.slice(0, 10).map(order => `
+        <div class="history-item" onclick="loadOrder('${order.id}')">
+          <span class="status-badge badge-${order.status}">${order.status}</span>
+          ${order.id.substring(0, 8)}... - ${order.dex || 'N/A'}
+        </div>
+      `).join('');
+    }
+
+    function loadOrder(orderId) {
+      fetch(`/api/orders/${orderId}`)
+        .then(response => response.json())
+        .then(order => {
+          if (order.error) {
+            alert('Order not found');
+            return;
+          }
+          
+          currentOrderId = orderId;
+          connectWebSocket(orderId);
+          
+          statusArea.style.display = 'block';
+          noOrderMsg.style.display = 'none';
+          
+          statusTimeline.innerHTML = '';
+          
+          // Simulate status timeline based on order status
+          const statuses = ['pending', 'routing', 'building', 'submitted'];
+          if (order.status === 'confirmed' || order.status === 'failed') {
+            statuses.push(order.status);
+          }
+          
+          statuses.forEach((status, index) => {
+            setTimeout(() => {
+              const li = document.createElement('li');
+              li.className = 'status-item active';
+              li.innerHTML = `
+                <span class="status-badge badge-${status}">${status}</span>
+                ${status === 'routing' && order.chosenDex ? ` - DEX: ${order.chosenDex}` : ''}
+                ${status === 'confirmed' ? ` - Price: ${order.executedPrice}, Tx: ${order.txHash?.substring(0, 10)}...` : ''}
+                ${status === 'failed' ? ` - Error: ${order.failedReason}` : ''}
+              `;
+              statusTimeline.appendChild(li);
+            }, index * 500);
+          });
+          
+          orderDetails.innerHTML = `
+            <p><strong>Order ID:</strong> ${order.id}</p>
+            <p><strong>Status:</strong> <span class="status-badge badge-${order.status}">${order.status}</span></p>
+            <p><strong>Token In:</strong> ${order.tokenIn}</p>
+            <p><strong>Token Out:</strong> ${order.tokenOut}</p>
+            <p><strong>Amount:</strong> ${order.amountIn}</p>
+            ${order.chosenDex ? `<p><strong>Chosen DEX:</strong> ${order.chosenDex}</p>` : ''}
+            ${order.executedPrice ? `<p><strong>Executed Price:</strong> ${order.executedPrice}</p>` : ''}
+            ${order.txHash ? `<p><strong>Tx Hash:</strong> ${order.txHash}</p>` : ''}
+            ${order.failedReason ? `<p><strong>Failed Reason:</strong> ${order.failedReason}</p>` : ''}
+          `;
+        })
+        .catch(error => {
+          console.error('Error loading order:', error);
+          alert('Error loading order');
+        });
+    }
+
+    function showError(field, message) {
+      document.getElementById(`${field}Error`).textContent = message;
+    }
+
+    function clearErrors() {
+      document.querySelectorAll('.error').forEach(el => el.textContent = '');
+    }
+  </script>
+</body>
+</html>

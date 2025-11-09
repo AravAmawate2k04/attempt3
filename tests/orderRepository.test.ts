@@ -79,4 +79,28 @@ describe('OrderRepository', () => {
     const fetched = await getOrderById('00000000-0000-0000-0000-000000000000');
     expect(fetched).toBeNull();
   });
+
+  it('simulates queue processing integration', async () => {
+    // Create order
+    const order = await createOrder({
+      orderType: 'market',
+      tokenIn: 'SOL',
+      tokenOut: 'USDC',
+      amountIn: 1,
+    });
+
+    // Simulate status updates as if processed by worker
+    await updateOrderStatus(order.id, 'routing');
+    await setOrderRoutingDecision(order.id, 'raydium');
+    await updateOrderStatus(order.id, 'building');
+    await updateOrderStatus(order.id, 'submitted');
+    await setOrderExecutionSuccess(order.id, 20.5, '0xtest');
+
+    // Verify final state
+    const updated = await getOrderById(order.id);
+    expect(updated!.status).toBe('confirmed');
+    expect(updated!.chosenDex).toBe('raydium');
+    expect(updated!.executedPrice).toBe(20.5);
+    expect(updated!.txHash).toBe('0xtest');
+  });
 });

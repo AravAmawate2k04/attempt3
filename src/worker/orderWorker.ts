@@ -74,6 +74,13 @@ async function processOrder(job: Job) {
       bestQuote.price
     );
 
+    // Slippage protection: check if executed price deviates more than 1% from quoted price
+    const slippage = Math.abs(exec.executedPrice - bestQuote.price) / bestQuote.price;
+    const maxSlippage = 0.01; // 1%
+    if (slippage > maxSlippage) {
+      throw new Error(`Slippage too high: ${slippage.toFixed(4)} > ${maxSlippage}, expected ${bestQuote.price.toFixed(4)}, got ${exec.executedPrice.toFixed(4)}`);
+    }
+
     await setOrderExecutionSuccess(orderId, exec.executedPrice, exec.txHash);
 
     await publishOrderStatus({
