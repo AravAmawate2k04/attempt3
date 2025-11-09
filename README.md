@@ -47,10 +47,10 @@ The following components have been implemented and verified:
 - **Order Model:** TypeScript interfaces for Order and OrderStatus.
 - **API Endpoint:** POST /api/orders/execute accepts market orders with validation, creates DB record, enqueues job, and returns orderId.
 - **Queue Integration:** BullMQ queue for order execution jobs with exponential backoff retries.
-- **Worker Process:** Consumes jobs from queue, processes orders (currently dummy processing with logging), supports concurrency of 10.
+- **Worker Process:** Consumes jobs from queue, processes orders through full lifecycle (pending → routing → building → submitted → confirmed/failed), fetches quotes from mock DEX router (Raydium vs Meteora), selects best route based on effective output after fees, and simulates execution with random delays and fake tx_hashes.
+- **Mock DEX Router:** Simulates quote fetching from Raydium and Meteora with realistic delays (200-400ms), random price variance (±5%), and different fees (30bps for Raydium, 25bps for Meteora), compares effective output to choose the best DEX.
 
 **Next Steps (Not Yet Implemented):**
-- Integrate DEX routing in worker (fetch quotes, select best DEX, simulate execution).
 - Add WebSocket updates for real-time order status streaming.
 - Implement unit/integration tests.
 - Create Postman collection for API testing.
