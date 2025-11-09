@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { createOrder } from '../repositories/orderRepository';
+import { orderQueue } from '../queue/orderQueue';  // ⬅️ add this
 
 interface ExecuteOrderBody {
   orderType: 'market';
@@ -35,6 +36,19 @@ export const orderRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
         tokenOut,
         amountIn: amount,
       });
+
+      // Enqueue job for processing this order
+      await orderQueue.add(
+        'execute',
+        { orderId: order.id },
+        {
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 1000, // 1s -> 2s -> 4s
+          },
+        }
+      );
 
       // For now, we just create the order and return the ID.
       // Queue + WebSocket will be wired in later steps.
