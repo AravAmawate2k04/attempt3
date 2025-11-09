@@ -13,9 +13,19 @@ const redisOptions = redisUrl
 
 export const ORDER_STATUS_CHANNEL = 'order-status';
 
-export const redisPub = new IORedis(redisOptions);
+export const redisPub = redisUrl
+  ? new IORedis(redisUrl)
+  : new IORedis({
+      host: redisHost,
+      port: redisPort,
+    });
 
-export const redisSub = new IORedis(redisOptions);
+export const redisSub = redisUrl
+  ? new IORedis(redisUrl)
+  : new IORedis({
+      host: redisHost,
+      port: redisPort,
+    });
 
 export interface OrderStatusEvent {
   orderId: string;
