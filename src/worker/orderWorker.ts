@@ -1,14 +1,14 @@
 import { Worker, Job } from 'bullmq';
-import { ORDER_QUEUE_NAME, redisConnection } from '../queue/orderQueue';
-import { MockDexRouter } from '../services/mockDexRouter';
+import { ORDER_QUEUE_NAME, redisConnection } from '../queue/orderQueue.js';
+import { MockDexRouter } from '../services/mockDexRouter.js';
 import {
   getOrderById,
   updateOrderStatus,
   setOrderRoutingDecision,
   setOrderExecutionSuccess,
   setOrderExecutionFailed,
-} from '../repositories/orderRepository';
-import { publishOrderStatus } from '../queue/orderEvents';
+} from '../repositories/orderRepository.js';
+import { publishOrderStatus } from '../queue/orderEvents.js';
 
 const router = new MockDexRouter();
 
