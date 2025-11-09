@@ -269,7 +269,8 @@
 
     function connectWebSocket(orderId) {
       if (ws) ws.close();
-      ws = new WebSocket(`ws://localhost:3000/ws/orders/${orderId}`);
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${protocol}//${window.location.host}/ws/orders/${orderId}`);
 
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
