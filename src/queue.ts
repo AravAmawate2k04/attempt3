@@ -3,43 +3,51 @@ import { MockDexRouter } from './dexRouter';
 import { Order, OrderStatus } from './types';
 
 export class OrderQueue {
-  private queue: Queue;
-  private router: MockDexRouter;
+  private queue: Queue | undefined;
+  private router: MockDexRouter | undefined;
   private statusCallbacks: Map<string, (status: OrderStatus) => void> = new Map();
 
   constructor() {
-    this.queue = new Queue('orders', {
-      connection: {
-        host: 'localhost',
-        port: 6379,
-      },
-    });
-    this.router = new MockDexRouter();
+    try {
+      this.queue = new Queue('orders', {
+        connection: {
+          host: 'localhost',
+          port: 6379,
+        },
+      });
+      this.router = new MockDexRouter();
 
-    // Set up worker
-    const worker = new Worker('orders', async (job) => {
-      const order: Order = job.data;
-      await this.processOrder(order);
-    }, {
-      connection: {
-        host: 'localhost',
-        port: 6379,
-      },
-    });
+      // Set up worker
+      const worker = new Worker('orders', async (job) => {
+        const order: Order = job.data;
+        await this.processOrder(order);
+      }, {
+        connection: {
+          host: 'localhost',
+          port: 6379,
+        },
+      });
 
-    worker.on('completed', (job) => {
-      console.log(`Order ${job.data.id} completed`);
-    });
+      worker.on('completed', (job) => {
+        console.log(`Order ${job.data.id} completed`);
+      });
 
-    worker.on('failed', (job, err) => {
-      if (job) {
-        console.log(`Order ${job.data.id} failed: ${err.message}`);
-        this.updateStatus(job.data.id, 'failed', err.message);
-      }
-    });
+      worker.on('failed', (job, err) => {
+        if (job) {
+          console.log(`Order ${job.data.id} failed: ${err.message}`);
+          this.updateStatus(job.data.id, 'failed', err.message);
+        }
+      });
+    } catch (error) {
+      console.error('Failed to initialize queue:', error);
+      // Don't throw, just log
+    }
   }
 
   async addOrder(order: Order): Promise<void> {
+    if (!this.queue) {
+      throw new Error('Queue not initialized');
+    }
     await this.queue.add('execute', order, { removeOnComplete: 10, removeOnFail: 5 });
     this.updateStatus(order.id, 'pending');
   }
@@ -65,6 +73,9 @@ export class OrderQueue {
   }
 
   private async processOrder(order: Order): Promise<void> {
+    if (!this.router) {
+      throw new Error('Router not initialized');
+    }
     try {
       this.updateStatus(order.id, 'routing');
       const { dex, quote } = await this.router.getBestQuote(order.tokenIn, order.tokenOut, order.amount);
@@ -84,6 +95,8 @@ export class OrderQueue {
   }
 
   async close(): Promise<void> {
-    await this.queue.close();
+    if (this.queue) {
+      await this.queue.close();
+    }
   }
 }
